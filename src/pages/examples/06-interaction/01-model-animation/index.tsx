@@ -22,7 +22,7 @@ export default function BasicsPage() {
     if (!host) return
 
     const tanglin = createBasicsScene(host)
-
+    tanglinRef.current = tanglin
     return () => {
       tanglin.dispose()
       host.replaceChildren()
@@ -30,6 +30,7 @@ export default function BasicsPage() {
   }, [sceneVersion])
  
   const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    console.log('handleClick index.tsx', event)
     tanglinRef.current?.handleClick(event.nativeEvent)
   }
   return (

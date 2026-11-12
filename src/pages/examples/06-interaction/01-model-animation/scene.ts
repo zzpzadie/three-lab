@@ -189,6 +189,7 @@ const createBasicsScene = (host: HTMLDivElement) => {
     }
   }
   const handleClick = (event: MouseEvent) => {
+    console.log('handleClick', event)
     const px = event.offsetX;
     const py = event.offsetY;
     //屏幕坐标px、py转标准设备坐标x、y

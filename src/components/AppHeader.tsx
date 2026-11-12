@@ -95,7 +95,7 @@ export default function AppHeader() {
       </AppHeaderNav>
       <AppHeaderRight>
         <a
-          href="https://github.com/z2586300277/three-lab"
+          href="https://github.com/zzpzadie/three-lab"
           target="_blank"
           rel="noreferrer"
         >

@@ -9,6 +9,7 @@ import LightShadowHDR from './examples/04-light-shadow/hdr'
 import ModelAnimation from './examples/05-model/01-model-animation'
 import ModelVideo from './examples/05-model/02-model-video'
 import Interaction from './examples/06-interaction/01-model-animation'
+import BaiyuJing from './examples/09-scenes/01-cloud-palace'
 import '@/styles/layout.css'
 import { findSubIdByExample } from '@/data/catalog'
 
@@ -21,6 +22,7 @@ const pages: Record<string, React.ComponentType> = {
   '05-model-animation': ModelAnimation,
   '05-model-video': ModelVideo,
   '06-interaction': Interaction,
+  '09-baiyu-jing': BaiyuJing,
 }
 
 const Host = styled.div`

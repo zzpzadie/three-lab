@@ -240,7 +240,7 @@ export const majors: MajorCategory[] = [
               {
                 id: '06-interaction',
                 title: '6.1.1、交互动画',
-                desc: 'Interaction',
+                desc: '碰撞检测、鼠标拾取、动画控制',
                 path: '/examples/three/06-interaction',
                 thumb: `${import.meta.env.BASE_URL}thumbs/06-interaction.jpg`,
               },
@@ -248,9 +248,27 @@ export const majors: MajorCategory[] = [
           },
         ],
       },
-      // 7、性能 
-      // 8、Shader 
-      // 9、Final 
+      // 7、性能
+      // 8、Shader
+      {
+        id: '9',
+        title: '9、应用场景',
+        children: [
+          {
+            id: '9.1',
+            title: '9.1、仙侠场景',
+            examples: [
+              {
+                id: '09-baiyu-jing',
+                title: '9.1.1、白玉京',
+                desc: '天上白玉京，十二楼五城 · 云海仙阙',
+                path: '/examples/three/09-baiyu-jing',
+                thumb: `${import.meta.env.BASE_URL}thumbs/09-cloud-palace.jpg`,
+              },
+            ],
+          },
+        ],
+      },
     ],
   },
   {

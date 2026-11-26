@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { FILE_HOST } from '@/config/assets'
 const createLightShadowScene = (host: HTMLDivElement) => {
     
     const scene = new THREE.Scene()
@@ -21,7 +22,6 @@ const createLightShadowScene = (host: HTMLDivElement) => {
     // 地面：一个圆形或方形的展台
     const groundGeometry = new THREE.PlaneGeometry(10, 10)
 
-    const FILE_HOST = 'https://z2586300277.github.io/3d-file-server/'
     const urls = [1, 2, 3, 4, 5, 6].map(
       (n) => FILE_HOST + `files/sky/skyBox0/${n}.png`
     )
@@ -56,7 +56,7 @@ const createLightShadowScene = (host: HTMLDivElement) => {
     scene.add(new THREE.DirectionalLight(0x8080ff , 1));// 平行光
 
     // const loader = new GLTFLoader();
-    // loader.load('https://z2586300277.github.io/3d-file-server/examples/coffeeMug/coffeeMug.glb', (gltf) => {
+    // loader.load(FILE_HOST + 'examples/coffeeMug/coffeeMug.glb', (gltf) => {
     //     gltf.scene.position.set(0, 1, 0)
     //     scene.add(gltf.scene)
     // })
@@ -67,7 +67,7 @@ const createLightShadowScene = (host: HTMLDivElement) => {
 
     
     const textureLoader = new THREE.TextureLoader();
-    const perlinTexture = textureLoader.load(`https://z2586300277.github.io/3d-file-server/` + 'examples/coffeeMug/perlin.png');
+    const perlinTexture = textureLoader.load(FILE_HOST + 'examples/coffeeMug/perlin.png');
     perlinTexture.wrapS = THREE.RepeatWrapping;
     perlinTexture.wrapT = THREE.RepeatWrapping;
 

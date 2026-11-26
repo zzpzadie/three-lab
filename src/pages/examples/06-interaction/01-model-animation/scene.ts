@@ -3,13 +3,15 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import gsap from 'gsap'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import * as CANNON from 'cannon-es';
+import * as CANNON from 'cannon-es'
+import { FILE_HOST } from '@/config/assets'
 const createBasicsScene = (host: HTMLDivElement) => {
   // 花园相关对象
   let wing1: THREE.Mesh, wing2: THREE.Mesh, petals: THREE.Mesh, butterfly: THREE.Group, body: THREE.Mesh;
   let flower: THREE.Group, stem: THREE.Mesh;
+  const gardenMixers: THREE.AnimationMixer[] = []
   let ground: THREE.Mesh;
-  type State = 'IdleOutside' | 'DoorOpening' | 'Crossing' | 'Play' // ...
+  type State = 'IdleOutside' | 'DoorOpening' | 'Play'  | 'Jumping'// ...
   let state: State = 'IdleOutside'
   let target : THREE.Vector3;
   // 场景相关对象
@@ -19,8 +21,6 @@ const createBasicsScene = (host: HTMLDivElement) => {
   let world: CANNON.World;
   //轨道控制器
   let controls: OrbitControls;
-  //相机目标点
-  let cameraTarget = new THREE.Vector3();
   let dracoLoader: DRACOLoader;
   let disposed = false
   
@@ -38,7 +38,6 @@ const createBasicsScene = (host: HTMLDivElement) => {
 
   //物理世界相关
   let playerBody: CANNON.Body
-  const PLAYER_H = 1.8
   const PLAYER_R = 0.35
   function init() {
     initScene();
@@ -118,6 +117,39 @@ const createBasicsScene = (host: HTMLDivElement) => {
     controls.maxDistance = 40       // 门外观察可适当加大
     controls.update()     
   }
+  //初始化物理世界
+  function initPhysics() {
+    world = new CANNON.World({ gravity: new CANNON.Vec3(0, -20, 0) }) // 可略大于 9.8，跳更利落
+    world.broadphase = new CANNON.NaiveBroadphase()
+    // 地面：静态
+    const groundBody = new CANNON.Body({
+      mass: 0,
+      shape: new CANNON.Plane(),
+    })
+    groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0) // //旋转规律与 three 地面一致
+    world.addBody(groundBody)
+    // 人物：用胶囊/盒子近似，不要用整模网格
+    playerBody = new CANNON.Body({
+      mass: 1,
+      shape: new CANNON.Sphere(PLAYER_R), // 入门用球；稳一点可用 Cylinder
+      position: new CANNON.Vec3(
+        model.position.x,
+        PLAYER_R, // 球心离地高度
+        model.position.z
+      ),
+      linearDamping: 0.1,
+      fixedRotation: true, // 人不被撞翻
+    })
+    const groundMat = new CANNON.Material('ground')
+    const playerMat = new CANNON.Material('player')
+    groundBody.material = groundMat
+    playerBody.material = playerMat
+    world.addContactMaterial(new CANNON.ContactMaterial(groundMat, playerMat, {
+      restitution: 0.45, // 0~1，软弹大约 0.2~0.45
+      friction: 0.3,
+    }))
+    world.addBody(playerBody)
+  }
   //初始化人物
   function initPerson() {
     // 1. 配置 Draco 解码器
@@ -128,7 +160,7 @@ const createBasicsScene = (host: HTMLDivElement) => {
     const loader = new GLTFLoader();
     loader.setDRACOLoader(dracoLoader);
     loader.load(
-      `https://z2586300277.github.io/3d-file-server/` + 'files/model/Soldier.glb',
+      FILE_HOST + 'models/Soldier.glb',
       function (gltf) {
         // console.log('控制台查看gltf对象结构', gltf);
         // console.log('动画数据', gltf.animations);
@@ -166,25 +198,10 @@ const createBasicsScene = (host: HTMLDivElement) => {
 
         activateAllActions();
 
-      }
+      },
+      undefined, // onProgress，不用就占位
+      (err) => console.error('Soldier 加载失败', err)
     );
-
-    
-    
-    // // 加载物理世界
-    // world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) })
-    // //   world.PhysicsRender = (deltaTime) => {
-
-    // //     world.step(1 / 60, deltaTime, 3)
-    
-    // //     world.bodies.forEach(body => body.render?.())
-    
-    // // }
-    // const boxShape = new CANNON.Box(new CANNON.Vec3(1, 1, 1))
-    // const boxBody = new CANNON.Body({ mass: 1 })
-    // boxBody.addShape(boxShape)
-    // world.addBody(boxBody)
-    // createPhysicsBody(world, ground, 0)
   }
   //初始化花园
   function initGarden() {
@@ -239,6 +256,102 @@ const createBasicsScene = (host: HTMLDivElement) => {
       .to(butterfly.rotation, { z: Math.PI / 4, duration: 0.5 }, "-=1") // -=1 表示与前一个动画同时开始
       .to(petals.scale, { x: 1.3, y: 0.6, z: 1.3, duration: 1 })
       .to(butterfly.position, { x: -3, y: 3, z: -2, duration: 2 })
+
+    // 额外加载远程 GLB 花朵 / 蝴蝶（不替换上面的几何体）
+    loadGardenModels()
+  }
+
+  function loadGardenModels() {
+    const loader = new GLTFLoader()
+    if (!dracoLoader) {
+      dracoLoader = new DRACOLoader()
+      dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/libs/draco/')
+    }
+    loader.setDRACOLoader(dracoLoader)
+
+    /** 放入 wrapper，按高度缩放并贴地；避免空根节点导致 bbox 过小、放大失控 */
+    const mountScaled = (
+      model: THREE.Object3D,
+      targetHeight: number,
+      at: THREE.Vector3,
+    ) => {
+      const wrap = new THREE.Group()
+      wrap.add(model)
+      scene.add(wrap)
+
+      model.updateMatrixWorld(true)
+      const box0 = new THREE.Box3().setFromObject(model)
+      const size0 = box0.getSize(new THREE.Vector3())
+      const h = Math.max(size0.y, 1e-3)
+      const s = THREE.MathUtils.clamp(targetHeight / h, 0.05, 8)
+      model.scale.setScalar(s)
+      model.updateMatrixWorld(true)
+
+      const box = new THREE.Box3().setFromObject(model)
+      const center = box.getCenter(new THREE.Vector3())
+      model.position.x += at.x - center.x
+      model.position.z += at.z - center.z
+      model.position.y += at.y - box.min.y
+      return wrap
+    }
+
+    const playClips = (root: THREE.Object3D, clips: THREE.AnimationClip[]) => {
+      if (!clips.length) return
+      const m = new THREE.AnimationMixer(root)
+      clips.forEach((clip) => m.clipAction(clip).play())
+      gardenMixers.push(m)
+    }
+
+    const modelBase = `${import.meta.env.BASE_URL}models/`
+    Promise.all([
+      loader.loadAsync(modelBase + 'flower.glb'),
+      // cache-bust after texture bake export
+      loader.loadAsync(modelBase + 'butterfly.glb?v=bake1'),
+    ]).then(([flowerGltf, butterflyGltf]) => {
+      if (disposed) return
+
+      const flowerModel = flowerGltf.scene
+      flowerModel.traverse((obj) => {
+        if (obj instanceof THREE.Mesh) {
+          obj.castShadow = true
+          obj.receiveShadow = true
+        }
+      })
+      // 相机 z≈20 看向门 z=12：模型必须放在门前（z>12），否则被墙挡住
+      mountScaled(flowerModel, 1.8, new THREE.Vector3(2.2, 0, 15.5))
+      playClips(flowerModel, flowerGltf.animations)
+
+      const butterflyModel = butterflyGltf.scene
+      butterflyModel.traverse((obj) => {
+        if (!(obj instanceof THREE.Mesh)) return
+        obj.castShadow = true
+        obj.receiveShadow = true
+        // Morpho 翅膀极薄，单面易穿帮
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+        for (const m of mats) {
+          if (m && 'side' in m) (m as THREE.Material).side = THREE.DoubleSide
+        }
+      })
+      // Blender 背部 +Z → glTF/Three 背部 +Y；局部旋转已在导出前 Apply 清零
+      butterflyModel.rotation.set(0, 0, 0)
+      butterflyModel.updateMatrixWorld(true)
+      const butterflyWrap = mountScaled(
+        butterflyModel,
+        0.55,
+        new THREE.Vector3(-2.0, 2.4, 16),
+      )
+      playClips(butterflyModel, butterflyGltf.animations)
+
+      gsap.to(butterflyWrap.position, {
+        x: 3.5, y: 0.6, z: -1.2,
+        duration: 4,
+        ease: 'power1.inOut',
+        yoyo: true,
+        repeat: -1,
+      })
+    }).catch((err) => {
+      console.error('花园 GLB 加载失败', err)
+    })
   }
   //初始化门
   function initDoor() {
@@ -287,6 +400,7 @@ const createBasicsScene = (host: HTMLDivElement) => {
     hinge.add(singleDoor) // 不要 scene.add(singleDoor)
     scene.add(hinge)
   }
+
   //激活所有动画
   function activateAllActions() {
     setWeight(idleAction, 1);
@@ -316,11 +430,19 @@ const createBasicsScene = (host: HTMLDivElement) => {
     action.setEffectiveWeight(weight);//设置动画权重
   }
 
-  let frameId = 0;
   function animate() {
-    frameId = requestAnimationFrame(animate)
     const delta = Timer.getDelta() // 或自己算 delta
     Timer.update()
+
+    if (world && playerBody && model && state !== 'Jumping') {
+      // 仅非跳跃（或仅落地阶段）同步
+      model.position.set(
+        playerBody.position.x,
+        playerBody.position.y - PLAYER_R,
+        playerBody.position.z
+      )
+    }
+    world?.step(1 / 60, delta, 3)
     mixer?.update(delta)          // 必须有
     cameraPositionAdjustment()
     controls.update()
@@ -331,6 +453,7 @@ const createBasicsScene = (host: HTMLDivElement) => {
     
     // 花朵轻微摆动
     petals.rotation.y += 0.005
+    // for (const m of gardenMixers) m.update(delta)
     renderer.render(scene, camera)
   }
   // 4) 状态机，根据状态执行不同的动画
@@ -340,9 +463,6 @@ const createBasicsScene = (host: HTMLDivElement) => {
     // 按需在这里挂/卸监听、播 GSAP
     if (next === 'DoorOpening') {
       openDoor();
-    }
-    if (next === 'Play') {
-      playJump();
     }
   }
   
@@ -401,6 +521,8 @@ const createBasicsScene = (host: HTMLDivElement) => {
         controls.enabled = true
         controls.update()
         state = 'Play'
+        initPhysics()
+
       },
     })
     doorTl.add(lightChangeAnimation(), '<') // 与「走到 z=3」同时
@@ -411,57 +533,130 @@ const createBasicsScene = (host: HTMLDivElement) => {
   //点蘑菇阶梯跳跃
   //点击目标 + 抛物线/冲量
   function playJump() {
+    
+    if (!playerBody || !target || state === 'Jumping') return
+    state = 'Jumping'
     followCamera = true
     controls.enabled = false
     console.log('playJump',modelface)
     if (!model || !target) return
     //点击目标 + 抛物线/冲量人物跳跃到目标位置
-    const jumpTl = gsap.timeline();
     const start = model.position.clone()
     const end = target.clone()
-    /**  转向：如果目标在人物背面，则将模型面部转向目标 */
-    if(end.z<start.z && modelface === true) {
-      modelface = false
-      jumpTl.to(model.rotation, { y: -Math.PI, duration: 0.3, ease: 'power1.inOut' })
-      console.log('转向背面')
-    }else if(end.z>start.z && modelface === false){
-      modelface = true
-      jumpTl.to(model.rotation, { y: Math.PI, duration: 0.3, ease: 'power1.inOut' })
-      console.log('转向正面')
-    }
-    // end.y = 0 // 落到地面高度，不要用花心 y=3 除非站花上
-
-    jumpTl.to(model.position, { x: end.x, z: end.z, duration: 0.8, ease: 'none', onStart: () => {
-        // 当前是 idle，切到 walk（不是 run→walk）
-        executeCrossFade(idleAction, walkAction, 0.3)
-      }
-    }, 0)
-    jumpTl.to(model.position, { y: start.y + 2, duration: 0.4, ease: 'power2.out', yoyo: true, repeat: 1 ,
-      onComplete: () => {
-        executeCrossFade(walkAction, idleAction, 0.4)
-        followCamera = false 
-        controls.enabled = true
-        controls.update()
-      }}, 0)
+      // 点地落 0；点花落花顶（按你点击来源自己设）
+    const landY = end.y > 1 ? 3.2 : 0
+    end.y = landY
  
-  }
-  /**
-   * 关门动画
-   */
-  function closeDoor() {
-    gsap.to(hinge.rotation, { y: Math.PI / 2, duration: 1, ease: 'power1.inOut' })
-  }
-  /**
-   * 人walk动画
-   */
-  function personWalkAnimation() {
-    //人开启跑步动画，同时人物位置跟随移动
-    gsap.to(model.position, { z: 10, duration: 1, ease: 'power1.inOut', onUpdate: () => {
-      runAction.play()
-      cameraPositionAdjustment()
-    } })
-  } 
+    // 若模型背对，改成: + Math.PI
+    const peakY = Math.max(start.y, end.y) + 2
+    executeCrossFade(idleAction, walkAction, 0.2)
+    const tl = gsap.timeline({
+      onComplete: () => {
+        // —— 落地交给物理 ——
+        landWithPhysics(end)
+      },
+    })
+    // 水平飞到目标
+    tl.to(model.position, { x: end.x, z: end.z, duration: 0.75, ease: 'none',onStart: () => {
 
+        // 转向（只用 Y）
+        model.rotation.y = Math.atan2(-end.x + start.x, -end.z + start.z)
+    } }, 0)
+    // 先升后降到 landY
+    tl.to(model.position, { y: peakY, duration: 0.35, ease: 'power2.out' }, 0)
+    tl.to(model.position, { y: end.y, duration: 0.4, ease: 'power2.in' }, 
+      0.35)
+
+  }
+  function landWithPhysics(end: THREE.Vector3) {
+    if (!playerBody || !model) {
+      executeCrossFade(walkAction, idleAction, 0.3)
+      state = 'Play'
+      followCamera = false
+      controls.enabled = true
+      return
+    }
+    // // 关键：body 对齐当前模型，再交给重力
+    // playerBody.position.set(end.x, end.y + PLAYER_R + 0.2, end.z)
+    // playerBody.velocity.set(0, -3, 0) 
+    // // 开同步：之后 animate 里用 body 写 model
+    // // syncPhysics = true
+    // // 短促下砸（可选）
+    // playerBody.velocity.y = -2
+    // // 落地停稳（碰地或高度判定）
+    
+    // let bounces = 0
+    // playerBody.addEventListener('collide', () => { bounces++ })
+    // const check = () => {
+    //   model.position.set(
+    //     playerBody.position.x,
+    //     playerBody.position.y - PLAYER_R,
+    //     playerBody.position.z,
+    //   )
+
+    //   // check 里：
+    //   if (bounces >= 2 && Math.abs(playerBody.velocity.y) < 0.4) {
+    //     playerBody.velocity.set(0, 0, 0)
+    //     playerBody.position.y = PLAYER_R
+    //     model.position.set(end.x, 0, end.z) // 点花则用 end.y
+    //     executeCrossFade(walkAction, idleAction, 0.3)
+    //     state = 'Play'
+    //     return
+    const landBodyY = end.y + PLAYER_R
+    let bounces = 0
+    const onCollide = () => {
+      bounces++
+    }
+    // 只注册一次，不要放进 check 里（否则每帧重置/重复绑定）
+    playerBody.addEventListener('collide', onCollide)
+
+    playerBody.velocity.set(0, 0, 0)
+    playerBody.position.set(end.x, landBodyY + 0.25, end.z)
+    playerBody.velocity.y = -3
+
+    const startedAt = performance.now()
+    const finishLand = () => {
+      playerBody.removeEventListener('collide', onCollide)
+      playerBody.velocity.set(0, 0, 0)
+      playerBody.position.set(end.x, landBodyY, end.z)
+      model.position.set(end.x, end.y, end.z)
+      executeCrossFade(walkAction, idleAction, 0.3)
+      state = 'Play'
+      followCamera = false
+      controls.enabled = true
+      controls.update()
+    }
+
+    const check = () => {
+      // 落地阶段：让模型跟着 body，才能看见软弹
+      model.position.set(
+        playerBody.position.x,
+        playerBody.position.y - PLAYER_R,
+        playerBody.position.z,
+      )
+
+      const nearGround = playerBody.position.y <= landBodyY + 0.12
+      const settled = nearGround && Math.abs(playerBody.velocity.y) < 0.45
+      const bouncedEnough = bounces >= 1 && settled
+      // 超时兜底，避免 walk 永远不切回 idle
+      const timedOut = performance.now() - startedAt > 2500
+
+      if (bouncedEnough || (settled && bounces >= 0 && performance.now() - startedAt > 400) || timedOut) {
+        finishLand()
+        return
+      }
+      // if (playerBody.position.y <= PLAYER_R + 0.08 && playerBody.velocity.y <= 0.05) {
+      //   playerBody.velocity.set(0, 0, 0)
+      //   playerBody.position.y = PLAYER_R
+      //   model.position.set(end.x, 0, end.z) // 点花则用 end.y
+      //   executeCrossFade(walkAction, idleAction, 0.3)
+      //   state = 'Play'
+      //   return
+      // }
+      requestAnimationFrame(check)
+    }
+    requestAnimationFrame(check)
+  }
   // 相机跟随位置
   const follow = {
     height: 2.2,   // 抬高
@@ -542,40 +737,11 @@ const createBasicsScene = (host: HTMLDivElement) => {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   }
   init();
-  function createPhysicsBody(PhysicsWorld: CANNON.World, model: THREE.Mesh, mass: number) {
-
-    const box = new THREE.Box3().setFromObject(model);
-
-    const { max, min } = box
-
-    const center = new THREE.Vector3();
-
-    box.getCenter(center);
-
-    const body = new CANNON.Body({
-
-        mass: mass,
-
-        shape: new CANNON.Box(new CANNON.Vec3((max.x - min.x) / 2, (max.y - min.y) / 2, (max.z - min.z) / 2)),
-
-        position: new CANNON.Vec3(center.x, center.y, center.z),
-
-    })
-
-    body.position.copy(new CANNON.Vec3(model.position.x, model.position.y, model.position.z))
-
-    PhysicsWorld!.addBody(body)
-
-    body.addEventListener('update', () => {
-      model.position.copy(new THREE.Vector3(body.position.x, body.position.y, body.position.z))
-      model.quaternion.copy(new THREE.Quaternion(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w))
-    })
-
-    return body
-  }
+ 
   const dispose = () => {
       // 停止动画循环
-      cancelAnimationFrame(frameId)
+      disposed = true
+renderer.setAnimationLoop(null)
       tl.kill()//停止时间线
       controls.dispose()//停止控制器
       renderer.dispose()//停止渲染器

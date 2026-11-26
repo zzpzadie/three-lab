@@ -5,6 +5,7 @@ import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 // 给原来的gltf加载器设置解压功能
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { FILE_HOST } from '@/config/assets'
 const createBasicsScene = (host: HTMLDivElement) => {
   let scene: THREE.Scene, renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera, stats: Stats;
   let model: THREE.Object3D, skeleton: THREE.SkeletonHelper, mixer: THREE.AnimationMixer, Timer: THREE.Timer;
@@ -82,7 +83,7 @@ const createBasicsScene = (host: HTMLDivElement) => {
     const loader = new GLTFLoader();
     loader.setDRACOLoader(dracoLoader);
     loader.load(
-      `https://z2586300277.github.io/3d-file-server/` + 'files/model/Soldier.glb',
+      FILE_HOST + 'models/Soldier.glb',
       function (gltf) {
         console.log('控制台查看gltf对象结构', gltf);
         console.log('动画数据', gltf.animations);

@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { FILE_HOST } from '@/config/assets'
 const createBasicsScene = async (host: HTMLDivElement) => {
   //创建场景
   const scene = new THREE.Scene();
@@ -30,7 +31,7 @@ const createBasicsScene = async (host: HTMLDivElement) => {
     resize(); // 初始化时先同步一次尺寸
     window.addEventListener('resize', resize);
 // 文件地址
-const urls = [0, 1, 2, 3, 4, 5].map(k => (`https://z2586300277.github.io/3d-file-server/` + 'files/sky/skyBox0/' + (k + 1) + '.png'));
+const urls = [0, 1, 2, 3, 4, 5].map(k => FILE_HOST + 'files/sky/skyBox0/' + (k + 1) + '.png');
 
 const textureCube = new THREE.CubeTextureLoader().load(urls);
 
@@ -41,7 +42,7 @@ const video = document.createElement('video')
 
 video.crossOrigin = 'anonymous' // 跨域
 
-video.src = 'https://z2586300277.github.io/3d-file-server/video/test.mp4'
+video.src = FILE_HOST + 'video/test.mp4'
 
 video.loop = true // 循环播放
 
@@ -51,7 +52,7 @@ video.play()
 
 const texture = await new Promise(r => video.onloadeddata = () => r(new THREE.VideoTexture(video))) // 创建视频纹理
 
-new GLTFLoader().load(`/models/quit.glb`, (gltf) => {
+new GLTFLoader().load(FILE_HOST + 'models/quit.glb', (gltf) => {
 
   gltf.scene.traverse((child) => {
 

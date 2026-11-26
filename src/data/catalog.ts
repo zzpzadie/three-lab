@@ -267,6 +267,109 @@ export const majors: MajorCategory[] = [
               },
             ],
           },
+          {
+            id: '9.2',
+            title: '9.2、风电',
+            examples: [
+              {
+                id: '09-wind',
+                title: '9.2.1、智慧风电监管平台',
+                desc: '透视机舱，探索从风能到电能的精密传动',
+                path: '/examples/three/09-wind',
+                thumb: `${import.meta.env.BASE_URL}thumbs/wind.webp`,
+              },
+            ],
+          },
+          {
+            id: '9.3',
+            title: '9.3、工厂',
+            examples: [
+              {
+                id: '09-factory',
+                title: '9.3.1、智慧工厂可视化大屏',
+                desc: '漫游精细厂区，掌握生产、仓储与设备运行',
+                path: '/examples/three/09-factory',
+                thumb: `${import.meta.env.BASE_URL}thumbs/factory.webp`,
+              },
+            ],
+          },
+          {
+            id: '9.4',
+            title: '9.4、人口',
+            examples: [
+              {
+                id: '09-population',
+                title: '9.4.1、全国人口统计总览',
+                desc: '环绕三维地球，感知人口分布与城市之间的流动',
+                path: '/examples/three/09-population',
+                thumb: `${import.meta.env.BASE_URL}thumbs/population.webp`,
+              },
+            ],
+          },
+          {
+            id: '9.5',
+            title: '9.5、巡检',
+            examples: [
+              {
+                id: '09-inspection',
+                title: '9.5.1、AI 智能巡检运营调度',
+                desc: '连接地图、车辆与事件，让每一次调度清晰可见',
+                path: '/examples/three/09-inspection',
+                thumb: `${import.meta.env.BASE_URL}thumbs/inspection.webp`,
+              },
+            ],
+          },
+          {
+            id: '9.6',
+            title: '9.6、农业',
+            examples: [
+              {
+                id: '09-agriculture',
+                title: '9.6.1、禾境 · 智慧农业生态管理中心',
+                desc: '生长有迹，在数字农场中探索作物、气候与精准灌溉',
+                path: '/examples/three/09-agriculture',
+                thumb: `${import.meta.env.BASE_URL}thumbs/agriculture.webp`,
+              },
+            ],
+          },
+          {
+            id: '9.7',
+            title: '9.7、工业',
+            examples: [
+              {
+                id: '09-industry',
+                title: '9.7.1、NEXUS · 智慧工业数字运营中心',
+                desc: '深入自动化车间，联动生产、质量、设备与能源',
+                path: '/examples/three/09-industry',
+                thumb: `${import.meta.env.BASE_URL}thumbs/industry.webp`,
+              },
+            ],
+          },
+          {
+            id: '9.8',
+            title: '9.8、园区',
+            examples: [
+              {
+                id: '09-park',
+                title: '9.8.1、星屿 · 智慧园区运营中心',
+                desc: '连接智慧楼宇、绿色能源与园区生活的每一个瞬间',
+                path: '/examples/three/09-park',
+                thumb: `${import.meta.env.BASE_URL}thumbs/park.webp`,
+              },
+            ],
+          },
+          {
+            id: '9.9',
+            title: '9.9、雨夜',
+            examples: [
+              {
+                id: '09-rainy-night',
+                title: '9.9.1、雨夜小城',
+                desc: '巷子在下雨 · 雨丝撞瓦、湿路倒影与水面涟漪',
+                path: '/examples/three/09-rainy-night',
+              },
+            ],
+          },
         ],
       },
     ],

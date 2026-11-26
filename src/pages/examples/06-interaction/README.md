@@ -29,6 +29,7 @@ group.position
 - 动画timeline衔接：doorTl.add(lightChangeAnimation(), '<')  "<"之前动画的开端**
 在时间线末尾（或使用参数的其他地方）添加回调，去除效果 lit.call(() => { scene.fog = null })
 
+- 模型动画与时间线动画结合使用：要同时开始可以使用onStart、'<'、绝对时间
 
 控制权：谁在改 camera / controls.target / 角色，谁就在占用控制权。同一时刻只能有一个主人。
 

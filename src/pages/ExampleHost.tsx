@@ -10,6 +10,14 @@ import ModelAnimation from './examples/05-model/01-model-animation'
 import ModelVideo from './examples/05-model/02-model-video'
 import Interaction from './examples/06-interaction/01-model-animation'
 import BaiyuJing from './examples/09-scenes/01-cloud-palace'
+import WindScreen from './examples/09-scenes/02-wind'
+import FactoryScreen from './examples/09-scenes/03-factory'
+import PopulationScreen from './examples/09-scenes/04-population'
+import InspectionScreen from './examples/09-scenes/05-inspection'
+import AgricultureScreen from './examples/09-scenes/06-agriculture'
+import IndustryScreen from './examples/09-scenes/07-industry'
+import ParkScreen from './examples/09-scenes/08-park'
+import RainyNight from './examples/09-scenes/09-rainy-night'
 import '@/styles/layout.css'
 import { findSubIdByExample } from '@/data/catalog'
 
@@ -23,6 +31,14 @@ const pages: Record<string, React.ComponentType> = {
   '05-model-video': ModelVideo,
   '06-interaction': Interaction,
   '09-baiyu-jing': BaiyuJing,
+  '09-wind': WindScreen,
+  '09-factory': FactoryScreen,
+  '09-population': PopulationScreen,
+  '09-inspection': InspectionScreen,
+  '09-agriculture': AgricultureScreen,
+  '09-industry': IndustryScreen,
+  '09-park': ParkScreen,
+  '09-rainy-night': RainyNight,
 }
 
 const Host = styled.div`

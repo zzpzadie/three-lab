@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { FILE_HOST } from '@/config/assets'
 
 const createGeometryMaterialScene = (host: HTMLDivElement) => {
     const scene = new THREE.Scene() 
@@ -126,11 +127,10 @@ const createGeometryMaterialScene = (host: HTMLDivElement) => {
     // geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
     geometry.computeVertexNormals(); 
 
-    const alpha_url =  `https://z2586300277.github.io/3d-file-server/` + "images/four/photo-1510942752400-ebce99a8a2c0.avif";
+    const alpha_url = FILE_HOST + "images/four/photo-1510942752400-ebce99a8a2c0.avif";
     const texture = new THREE.TextureLoader().load(alpha_url);
     texture.colorSpace = THREE.SRGBColorSpace;//设置纹理颜色空间为sRGB，确保颜色正确显示
 
-    const FILE_HOST = 'https://z2586300277.github.io/3d-file-server/'
     const urls = [1, 2, 3, 4, 5, 6].map(
       (n) => FILE_HOST + `files/sky/skyBox0/${n}.png`
     )

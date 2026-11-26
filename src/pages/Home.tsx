@@ -22,9 +22,19 @@ export default function Home() {
       <Typography.Title level={3} style={{ borderBottom: '2px solid #cf1322' }}>{activeSub?.title}</Typography.Title>
       <Row gutter={[16, 16]}>
         {activeSub?.examples.map((item) => (
-          <Col key={item.id} >
+          <Col key={item.id} span={6} >
             <Link to={item.path}>   {/* → /examples/three/01-basics */}
-              <Card hoverable cover={item.thumb ? <img src={item.thumb} alt="" style={{ width: 240, height: 160 }} /> : null}>
+              <Card 
+              hoverable 
+              cover={
+                item.thumb ? (
+                <img 
+                src={item.thumb} 
+                alt="" 
+                style={{ width: '100%', height: 160 , objectFit: 'cover', display: 'block' }} /> 
+
+                ) : null
+              }>
                 <Card.Meta title={item.title} description={item.desc} />
               </Card>
             </Link>
